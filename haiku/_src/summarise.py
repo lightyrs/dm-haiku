@@ -157,6 +157,11 @@ def log_used_modules(
   return out
 
 
+def make_hk_transform_ignore_jax_transforms(f):
+  """Wraps f such that if it was jit/pmap-ed Haiku won't realise."""
+  return lambda *a, **k: f(*a, **k)  # pylint: disable=unnecessary-lambda
+
+
 def eval_summary(
     f: Union[Callable[..., Any], hk.Transformed, hk.TransformedWithState],
 ) -> Callable[..., Sequence[MethodInvocation]]:
@@ -196,6 +201,11 @@ def eval_summary(
 
     with hk.experimental.intercept_methods(logging_interceptor):
       f(*args, **kwargs)
+
+  # We know that we will only evaluate this function once and that inside
+  # eval_shape we will re-trace any jitted/pmap-ed code. This allows users to
+  # pass in jit/pmap decorated apply functions (e.g. train_step).
+  f = make_hk_transform_ignore_jax_transforms(f)
 
   f_orig = hk.transform_with_state(f)
   f_logged = hk.transform_with_state(f_logged)

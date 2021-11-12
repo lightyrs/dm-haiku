@@ -358,7 +358,6 @@ def transform_with_state(f) -> TransformedWithState:
     functions.
   """
   analytics.log_once("transform_with_state")
-  check_not_jax_transformed(f)
 
   unexpected_tracer_hint = (
       "An UnexpectedTracerError was raised while inside a Haiku transformed "
